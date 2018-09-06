@@ -4,6 +4,7 @@
 import os
 import re
 import sys
+import pickle
 import logging
 import requests
 
@@ -70,7 +71,7 @@ class Cli(object):
 
     def __init__(self, user, password, courseid=[]):
         super(Cli, self).__init__()
-        self.initLogger()
+        self.logger = logging.getLogger("logger")
         self.s = requests.Session()
         self.s.headers = self.headers
         self.login(user, password)
@@ -87,27 +88,20 @@ class Cli(object):
                 if len(tmp):
                     self.courseid.append(tmp)
 
-    def initLogger(self):
-        formatStr = '[%(asctime)s] [%(levelname)s] %(message)s'
-        logger = logging.getLogger("logger")
-        logger.setLevel(logging.DEBUG)
-        ch = logging.StreamHandler()
-        chformatter = logging.Formatter(formatStr)
-        ch.setLevel(logging.DEBUG)
-        ch.setFormatter(chformatter)
-        logger.addHandler(ch)
-        self.logger = logger
-
     def login(self, user, password):
-        self.s.get(Login.page)
-        data = {
-            'userName': user,
-            'pwd': password,
-            'sb': 'sb'
-        }
-        self.s.post(Login.url, data=data)
-        if 'sepuser' not in self.s.cookies.get_dict():
-            return False
+        if os.path.exists('cookie.pkl'):
+            self.load()
+        else:
+            self.s.get(Login.page)
+            data = {
+                'userName': user,
+                'pwd': password,
+                'sb': 'sb'
+            }
+            self.s.post(Login.url, data=data)
+            if 'sepuser' not in self.s.cookies.get_dict():
+                return False
+            self.save()
         r = self.s.get(Login.system)
         identity = r.content.split('<meta http-equiv="refresh" content="0;url=')
         if len(identity) < 2:
@@ -117,15 +111,30 @@ class Cli(object):
         self.identity = identityUrl.split("Identity=")[1].split("&")[0]
         self.s.get(identityUrl)
 
+    def save(self):
+        self.logger.debug("save cookie...")
+        with open('cookie.pkl', 'wb') as f:
+            pickle.dump(self.s.cookies, f)
+
+    def load(self):
+        self.logger.debug("loading cookie...")
+        with open('cookie.pkl', 'rb') as f:
+            cookies = pickle.load(f)
+            self.s.cookies = cookies
+
     def enroll(self):
         r = self.s.get(Course.selected)
         courseid = []
+        self.logger.debug(self.courseid)
         for cid in self.courseid:
             if cid in r.content:
                 self.logger.info("%s already selected" % cid)
                 continue
             if not self.enrollCourse(cid):
+                self.logger.debug("try %s fail" % cid)
                 courseid.append(cid)
+            else:
+                self.logger.debug("try %s suc" % cid)
         return courseid
 
     def enrollCourse(self, cid):
@@ -149,8 +158,6 @@ class Cli(object):
             'deptIds': deptid,
             'sids': code
         }
-        self.logger.debug("try %s" % cid)
-        self.logger.debug(data)
         courseSaveUrl = Course.save + identity
         r = self.s.post(courseSaveUrl, data=data)
         if 'class="error' not in r.content:
@@ -161,7 +168,19 @@ class Cli(object):
             return False
 
 
+def initLogger():
+    formatStr = '[%(asctime)s] [%(levelname)s] %(message)s'
+    logger = logging.getLogger("logger")
+    logger.setLevel(logging.DEBUG)
+    ch = logging.StreamHandler()
+    chformatter = logging.Formatter(formatStr)
+    ch.setLevel(logging.DEBUG)
+    ch.setFormatter(chformatter)
+    logger.addHandler(ch)
+
+
 def main():
+    initLogger()
     with open("auth", "rb") as fh:
         user = fh.readline().strip()
         password = fh.readline().strip()
