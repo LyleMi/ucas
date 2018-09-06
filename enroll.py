@@ -58,6 +58,10 @@ class Course:
     save = base + '/courseManage/saveCourse?s='
 
 
+class NetworkSucks(Exception):
+    pass
+
+
 class Cli(object):
 
     headers = {
@@ -76,8 +80,24 @@ class Cli(object):
         self.logger = logging.getLogger("logger")
         self.s = requests.Session()
         self.s.headers = self.headers
+        self.s.timeout = 5
         self.login(user, password)
         self.initCourse()
+
+    def get(self, url, *args, **kwargs):
+        r = self.s.get(url, *args, **kwargs)
+        if r.status_code != requests.codes.ok:
+            if r.status_code == requests.codes.moved_permanently:
+                raise NetworkSucks
+            else:
+                print(r.status_code)
+        return r
+
+    def post(self, url, *args, **kwargs):
+        r = self.s.post(url, *args, **kwargs)
+        if r.status_code != requests.codes.ok:
+            raise NetworkSucks
+        return r
 
     def initCourse(self):
         self.courseid = []
@@ -91,24 +111,24 @@ class Cli(object):
         if os.path.exists('cookie.pkl'):
             self.load()
         else:
-            self.s.get(Login.page)
+            self.get(Login.page)
             data = {
                 'userName': user,
                 'pwd': password,
                 'sb': 'sb'
             }
-            self.s.post(Login.url, data=data)
+            self.post(Login.url, data=data)
             if 'sepuser' not in self.s.cookies.get_dict():
                 return False
             self.save()
-        r = self.s.get(Login.system)
+        r = self.get(Login.system)
         identity = r.content.split('<meta http-equiv="refresh" content="0;url=')
         if len(identity) < 2:
             self.logger.error("login fail")
             return
         identityUrl = identity[1].split('"')[0]
         self.identity = identityUrl.split("Identity=")[1].split("&")[0]
-        self.s.get(identityUrl)
+        self.get(identityUrl)
 
     def save(self):
         self.logger.debug("save cookie...")
@@ -122,7 +142,7 @@ class Cli(object):
             self.s.cookies = cookies
 
     def enroll(self):
-        r = self.s.get(Course.selected)
+        r = self.get(Course.selected)
         courseid = []
         self.logger.debug(self.courseid)
         for cid in self.courseid:
@@ -137,7 +157,7 @@ class Cli(object):
         return courseid
 
     def enrollCourse(self, cid):
-        r = self.s.get(Course.selection)
+        r = self.get(Course.selection)
         depRe = re.compile(r'<label for="id_([0-9]{3})">(.*)<\/label>')
         deptIds = depRe.findall(r.content)
         for dep in deptIds:
@@ -150,7 +170,7 @@ class Cli(object):
             'sb': 0
         }
         categoryUrl = Course.category + identity
-        r = self.s.post(categoryUrl, data=data)
+        r = self.post(categoryUrl, data=data)
         codeRe = re.compile(r'<span id="courseCode_([A-F0-9]{16})">' + cid + '<\/span>')
         code = codeRe.findall(r.content)[0]
         data = {
@@ -158,7 +178,7 @@ class Cli(object):
             'sids': code
         }
         courseSaveUrl = Course.save + identity
-        r = self.s.post(courseSaveUrl, data=data)
+        r = self.post(courseSaveUrl, data=data)
         if 'class="error' not in r.content:
             return True
         else:
@@ -189,11 +209,19 @@ def main():
                 break
             c.courseid = courseid
             time.sleep(random.randint(10, 20))
-        except Exception as e:
-            c.logger.error(repr(e))
         except KeyboardInterrupt as e:
             c.logger.info("user abored")
             break
+        except (
+            NetworkSucks, 
+            requests.exceptions.ConnectionError, 
+            requests.exceptions.ConnectTimeout
+        ) as e:
+            c.logger.debug("network error")
+            c.login()
+        except Exception as e:
+            c.logger.error(repr(e))
+            c.login()
 
 
 if __name__ == '__main__':
