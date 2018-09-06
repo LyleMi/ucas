@@ -4,6 +4,8 @@
 import os
 import re
 import sys
+import time
+import random
 import pickle
 import logging
 import requests
@@ -69,16 +71,13 @@ class Cli(object):
         'Accept-Language': 'zh-CN,zh;q=0.8,en;q=0.6',
     }
 
-    def __init__(self, user, password, courseid=[]):
+    def __init__(self, user, password):
         super(Cli, self).__init__()
         self.logger = logging.getLogger("logger")
         self.s = requests.Session()
         self.s.headers = self.headers
         self.login(user, password)
-        if not courseid:
-            self.initCourse()
-        else:
-            self.courseid = courseid
+        self.initCourse()
 
     def initCourse(self):
         self.courseid = []
@@ -161,10 +160,8 @@ class Cli(object):
         courseSaveUrl = Course.save + identity
         r = self.s.post(courseSaveUrl, data=data)
         if 'class="error' not in r.content:
-            self.logger.info('[Success] ' + cid)
             return True
         else:
-            print('[Fail] ' + cid)
             return False
 
 
@@ -184,13 +181,14 @@ def main():
     with open("auth", "rb") as fh:
         user = fh.readline().strip()
         password = fh.readline().strip()
-    courseid = []
+    c = Cli(user, password)
     while True:
         try:
-            c = Cli(user, password, courseid)
             courseid = c.enroll()
             if not courseid:
                 break
+            c.courseid = courseid
+            time.sleep(random.randint(10, 20))
         except Exception as e:
             c.logger.error(repr(e))
         except KeyboardInterrupt as e:
