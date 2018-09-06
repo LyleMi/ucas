@@ -10,6 +10,7 @@ import pickle
 import logging
 import requests
 
+from config import Config
 
 CollegeCode = {
     '01': '数学',
@@ -80,7 +81,7 @@ class Cli(object):
         self.logger = logging.getLogger("logger")
         self.s = requests.Session()
         self.s.headers = self.headers
-        self.s.timeout = 5
+        self.s.timeout = Config.timeout
         self.login(user, password)
         self.initCourse()
 
@@ -89,8 +90,6 @@ class Cli(object):
         if r.status_code != requests.codes.ok:
             if r.status_code == requests.codes.moved_permanently:
                 raise NetworkSucks
-            else:
-                print(r.status_code)
         return r
 
     def post(self, url, *args, **kwargs):
@@ -208,7 +207,7 @@ def main():
             if not courseid:
                 break
             c.courseid = courseid
-            time.sleep(random.randint(10, 20))
+            time.sleep(random.randint(Config.minIdle, Config.maxIdle))
         except KeyboardInterrupt as e:
             c.logger.info("user abored")
             break
