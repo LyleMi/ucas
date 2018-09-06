@@ -178,7 +178,7 @@ class Cli(object):
         }
         courseSaveUrl = Course.save + identity
         r = self.post(courseSaveUrl, data=data)
-        if 'class="error' not in r.content:
+        if 'class="error"></label>' in r.content:
             return True
         else:
             return False
