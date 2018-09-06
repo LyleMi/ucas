@@ -3,6 +3,7 @@
 
 import os
 import re
+import sys
 import logging
 import requests
 
@@ -67,13 +68,16 @@ class Cli(object):
         'Accept-Language': 'zh-CN,zh;q=0.8,en;q=0.6',
     }
 
-    def __init__(self, user, password):
+    def __init__(self, user, password, courseid=[]):
         super(Cli, self).__init__()
         self.initLogger()
-        self.initCourse()
         self.s = requests.Session()
         self.s.headers = self.headers
         self.login(user, password)
+        if not courseid:
+            self.initCourse()
+        else:
+            self.courseid = courseid
 
     def initCourse(self):
         self.courseid = []
@@ -115,11 +119,14 @@ class Cli(object):
 
     def enroll(self):
         r = self.s.get(Course.selected)
+        courseid = []
         for cid in self.courseid:
             if cid in r.content:
                 self.logger.info("%s already selected" % cid)
                 continue
-            self.enrollCourse(cid)
+            if not self.enrollCourse(cid):
+                courseid.append(cid)
+        return courseid
 
     def enrollCourse(self, cid):
         r = self.s.get(Course.selection)
@@ -158,8 +165,18 @@ def main():
     with open("auth", "rb") as fh:
         user = fh.readline().strip()
         password = fh.readline().strip()
-    c = Cli(user, password)
-    c.enroll()
+    courseid = []
+    while True:
+        try:
+            c = Cli(user, password, courseid)
+            courseid = c.enroll()
+            if not courseid:
+                break
+        except Exception as e:
+            c.logger.error(repr(e))
+        except KeyboardInterrupt as e:
+            c.logger.info("user abored")
+            break
 
 
 if __name__ == '__main__':
