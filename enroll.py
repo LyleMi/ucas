@@ -217,10 +217,10 @@ def main():
             requests.exceptions.ConnectTimeout
         ) as e:
             c.logger.debug("network error")
-            c.login()
+            c.login(user, password)
         except Exception as e:
             c.logger.error(repr(e))
-            c.login()
+            c.login(user, password)
 
 
 if __name__ == '__main__':
