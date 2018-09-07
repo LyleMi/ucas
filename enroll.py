@@ -78,7 +78,7 @@ class Cli(object):
 
     def __init__(self, user, password):
         super(Cli, self).__init__()
-        self.logger = logging.getLogger("logger")
+        self.logger = logging.getLogger('logger')
         self.s = requests.Session()
         self.s.headers = self.headers
         self.s.timeout = Config.timeout
@@ -88,8 +88,7 @@ class Cli(object):
     def get(self, url, *args, **kwargs):
         r = self.s.get(url, *args, **kwargs)
         if r.status_code != requests.codes.ok:
-            if r.status_code == requests.codes.moved_permanently:
-                raise NetworkSucks
+            raise NetworkSucks
         return r
 
     def post(self, url, *args, **kwargs):
@@ -100,7 +99,7 @@ class Cli(object):
 
     def initCourse(self):
         self.courseid = []
-        with open("courseid") as fh:
+        with open('courseid', 'rb') as fh:
             for c in fh:
                 tmp = c.replace(' ', '').strip()
                 if len(tmp):
@@ -123,19 +122,19 @@ class Cli(object):
         r = self.get(Login.system)
         identity = r.content.split('<meta http-equiv="refresh" content="0;url=')
         if len(identity) < 2:
-            self.logger.error("login fail")
+            self.logger.error('login fail')
             return
         identityUrl = identity[1].split('"')[0]
-        self.identity = identityUrl.split("Identity=")[1].split("&")[0]
+        self.identity = identityUrl.split('Identity=')[1].split('&')[0]
         self.get(identityUrl)
 
     def save(self):
-        self.logger.debug("save cookie...")
+        self.logger.debug('save cookie...')
         with open('cookie.pkl', 'wb') as f:
             pickle.dump(self.s.cookies, f)
 
     def load(self):
-        self.logger.debug("loading cookie...")
+        self.logger.debug('loading cookie...')
         with open('cookie.pkl', 'rb') as f:
             cookies = pickle.load(f)
             self.s.cookies = cookies
@@ -146,13 +145,13 @@ class Cli(object):
         self.logger.debug(self.courseid)
         for cid in self.courseid:
             if cid in r.content:
-                self.logger.info("%s already selected" % cid)
+                self.logger.info('course %s already selected' % cid)
                 continue
             if not self.enrollCourse(cid):
-                self.logger.debug("try %s fail" % cid)
+                self.logger.debug('try enroll course %s fail' % cid)
                 courseid.append(cid)
             else:
-                self.logger.debug("try %s suc" % cid)
+                self.logger.debug("enroll course %s success" % cid)
         return courseid
 
     def enrollCourse(self, cid):
@@ -186,7 +185,7 @@ class Cli(object):
 
 def initLogger():
     formatStr = '[%(asctime)s] [%(levelname)s] %(message)s'
-    logger = logging.getLogger("logger")
+    logger = logging.getLogger('logger')
     logger.setLevel(logging.DEBUG)
     ch = logging.StreamHandler()
     chformatter = logging.Formatter(formatStr)
@@ -197,7 +196,7 @@ def initLogger():
 
 def main():
     initLogger()
-    with open("auth", "rb") as fh:
+    with open('auth', 'rb') as fh:
         user = fh.readline().strip()
         password = fh.readline().strip()
     c = Cli(user, password)
@@ -209,14 +208,14 @@ def main():
             c.courseid = courseid
             time.sleep(random.randint(Config.minIdle, Config.maxIdle))
         except KeyboardInterrupt as e:
-            c.logger.info("user abored")
+            c.logger.info('user abored')
             break
         except (
             NetworkSucks, 
             requests.exceptions.ConnectionError, 
             requests.exceptions.ConnectTimeout
         ) as e:
-            c.logger.debug("network error")
+            c.logger.debug('network error')
             c.login(user, password)
         except Exception as e:
             c.logger.error(repr(e))
