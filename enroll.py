@@ -211,15 +211,13 @@ def main():
             c.logger.info('user abored')
             break
         except (
-            NetworkSucks, 
-            requests.exceptions.ConnectionError, 
+            NetworkSucks,
+            requests.exceptions.ConnectionError,
             requests.exceptions.ConnectTimeout
         ) as e:
             c.logger.debug('network error')
-            c.login(user, password)
         except Exception as e:
             c.logger.error(repr(e))
-            c.login(user, password)
 
 
 if __name__ == '__main__':
