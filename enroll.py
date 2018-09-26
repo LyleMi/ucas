@@ -207,6 +207,9 @@ def main():
                 break
             c.courseid = courseid
             time.sleep(random.randint(Config.minIdle, Config.maxIdle))
+        except IndexError as e:
+            c.logger.info("Course not found")
+            time.sleep(random.randint(Config.minIdle, Config.maxIdle))
         except KeyboardInterrupt as e:
             c.logger.info('user abored')
             break
