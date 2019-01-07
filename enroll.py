@@ -48,6 +48,7 @@ class Login:
     page = 'http://sep.ucas.ac.cn'
     url = page + '/slogin'
     system = page + '/portal/site/226/821'
+    pic = page + '/changePic'
 
 
 class Course:
@@ -76,13 +77,13 @@ class Cli(object):
         'Accept-Language': 'zh-CN,zh;q=0.8,en;q=0.6',
     }
 
-    def __init__(self, user, password):
+    def __init__(self, user, password, captcha=False):
         super(Cli, self).__init__()
         self.logger = logging.getLogger('logger')
         self.s = requests.Session()
         self.s.headers = self.headers
         self.s.timeout = Config.timeout
-        self.login(user, password)
+        self.login(user, password, captcha)
         self.initCourse()
 
     def get(self, url, *args, **kwargs):
@@ -105,7 +106,7 @@ class Cli(object):
                 if len(tmp):
                     self.courseid.append(tmp)
 
-    def login(self, user, password):
+    def login(self, user, password, captcha):
         if os.path.exists('cookie.pkl'):
             self.load()
         else:
@@ -115,6 +116,10 @@ class Cli(object):
                 'pwd': password,
                 'sb': 'sb'
             }
+            if captcha:
+                with open('captcha.jpg', 'wb') as fh:
+                    fh.write(self.get(Login.pic).content)
+                data['certCode'] = raw_input('input captcha >>> ')
             self.post(Login.url, data=data)
             if 'sepuser' not in self.s.cookies.get_dict():
                 return False
@@ -208,7 +213,7 @@ def main():
             c.courseid = courseid
             time.sleep(random.randint(Config.minIdle, Config.maxIdle))
         except IndexError as e:
-            c.logger.info("Course not found")
+            c.logger.info("Course not found, maybe not start yet")
             time.sleep(random.randint(Config.minIdle, Config.maxIdle))
         except KeyboardInterrupt as e:
             c.logger.info('user abored')
