@@ -122,13 +122,14 @@ class Cli(object):
                 data['certCode'] = raw_input('input captcha >>> ')
             self.post(Login.url, data=data)
             if 'sepuser' not in self.s.cookies.get_dict():
-                return False
+                self.logger.error('login fail...')
+                sys.exit()
             self.save()
         r = self.get(Login.system)
         identity = r.content.split('<meta http-equiv="refresh" content="0;url=')
         if len(identity) < 2:
             self.logger.error('login fail')
-            return
+            return False
         identityUrl = identity[1].split('"')[0]
         self.identity = identityUrl.split('Identity=')[1].split('&')[0]
         self.get(identityUrl)
@@ -204,7 +205,11 @@ def main():
     with open('auth', 'rb') as fh:
         user = fh.readline().strip()
         password = fh.readline().strip()
-    c = Cli(user, password)
+    if len(sys.argv) > 1 and sys.argv[1] in ['-c', 'captcha']:
+        captcha = True
+    else:
+        captcha = False
+    c = Cli(user, password, captcha)
     while True:
         try:
             courseid = c.enroll()
