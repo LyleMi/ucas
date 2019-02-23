@@ -11,6 +11,7 @@ import logging
 import requests
 
 from config import Config
+from mailer import sendemail
 
 CollegeCode = {
     '01': '数学',
@@ -205,7 +206,7 @@ def main():
     with open('auth', 'rb') as fh:
         user = fh.readline().strip()
         password = fh.readline().strip()
-    if len(sys.argv) > 1 and sys.argv[1] in ['-c', 'captcha']:
+    if '-c' in sys.argv or 'captcha' in sys.argv:
         captcha = True
     else:
         captcha = False
@@ -231,6 +232,13 @@ def main():
             c.logger.debug('network error')
         except Exception as e:
             c.logger.error(repr(e))
+    if  ('-m' in sys.argv or 'mail' in sys.argv) and os.path.exists('mailconfig'):
+        with open('mailconfig', 'rb') as fh:
+            user = fh.readline().strip()
+            pwd = fh.readline().strip()
+            smtpServer = fh.readline().strip()
+            receiver = fh.readline().strip()
+            sendemail(user, pwd, smtpServer, receiver)
 
 
 if __name__ == '__main__':
