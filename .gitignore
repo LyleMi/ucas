@@ -108,3 +108,4 @@ courseid
 cookie.pkl
 captcha.jpg
 mailconfig
+.vscode/launch.json
