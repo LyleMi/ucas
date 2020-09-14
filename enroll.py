@@ -69,6 +69,9 @@ class Course:
 class NetworkSucks(Exception):
     pass
 
+class AuthInvalid(Exception):
+    pass
+
 
 class Cli(object):
 
@@ -131,6 +134,9 @@ class Cli(object):
                 self.logger.error('login fail...')
                 sys.exit()
             self.save()
+        self.auth()
+
+    def auth(self):
         r = self.get(Login.system)
         identity = r.text.split('<meta http-equiv="refresh" content="0;url=')
         if len(identity) < 2:
@@ -153,6 +159,8 @@ class Cli(object):
 
     def enroll(self):
         r = self.get(Course.selected)
+        if 'class="error"></label>' not in r.text:
+            raise AuthInvalid
         courseid = []
         self.logger.debug(self.courseid)
         for cid in self.courseid:
@@ -235,6 +243,10 @@ def main():
             requests.exceptions.ConnectTimeout
         ) as e:
             c.logger.debug('network error')
+        except AuthInvalid as e:
+            c.logger.error('wait for user operating')
+            time.sleep(Config.waitForUser)
+            c.auth()
         except Exception as e:
             c.logger.error(repr(e))
     if  ('-m' in sys.argv or 'mail' in sys.argv) and os.path.exists('mailconfig'):
