@@ -25,6 +25,8 @@ CollegeCode = {
     '0812': '计算',
     '0808': '电子',
     '0801': '工程',
+    '1256': '工程',
+    '1205': '经管',
     '0201': '经管',
     '0202': '公管',
     '0301': '公管',
@@ -39,11 +41,12 @@ CollegeCode = {
     '2001': '未来',
     '22': '',
     '0101': '马克',
+    '0305': '马克',
     '0402': '心理',
     '0811': '人工',
     '0702': '纳米',
     '1302': '艺术',
-    '0452': '体育'
+    '0452': '体育',
 }
 
 
@@ -64,6 +67,9 @@ class Course:
 
 
 class NetworkSucks(Exception):
+    pass
+
+class AuthInvalid(Exception):
     pass
 
 
@@ -103,7 +109,7 @@ class Cli(object):
 
     def initCourse(self):
         self.courseid = []
-        with open('courseid', 'rb') as fh:
+        with open('courseid', 'r', encoding='utf8') as fh:
             for c in fh:
                 tmp = c.replace(' ', '').strip()
                 if len(tmp):
@@ -122,14 +128,17 @@ class Cli(object):
             if captcha:
                 with open('captcha.jpg', 'wb') as fh:
                     fh.write(self.get(Login.pic).content)
-                data['certCode'] = raw_input('input captcha >>> ')
+                data['certCode'] = input('input captcha >>> ')
             self.post(Login.url, data=data)
             if 'sepuser' not in self.s.cookies.get_dict():
                 self.logger.error('login fail...')
                 sys.exit()
             self.save()
+        self.auth()
+
+    def auth(self):
         r = self.get(Login.system)
-        identity = r.content.split('<meta http-equiv="refresh" content="0;url=')
+        identity = r.text.split('<meta http-equiv="refresh" content="0;url=')
         if len(identity) < 2:
             self.logger.error('login fail')
             return False
@@ -150,10 +159,12 @@ class Cli(object):
 
     def enroll(self):
         r = self.get(Course.selected)
+        if 'class="error"></label>' not in r.text:
+            raise AuthInvalid
         courseid = []
         self.logger.debug(self.courseid)
         for cid in self.courseid:
-            if cid in r.content:
+            if cid in r.text:
                 self.logger.info('course %s already selected' % cid)
                 continue
             if not self.enrollCourse(cid):
@@ -166,12 +177,12 @@ class Cli(object):
     def enrollCourse(self, cid):
         r = self.get(Course.selection)
         depRe = re.compile(r'<label for="id_([0-9]{3})">(.*)<\/label>')
-        deptIds = depRe.findall(r.content)
+        deptIds = depRe.findall(r.text)
         for dep in deptIds:
             if CollegeCode[cid[:4]] in dep[1]:
                 deptid = dep[0]
                 break
-        identity = r.content.split('action="/courseManage/selectCourse?s=')[1].split('"')[0]
+        identity = r.text.split('action="/courseManage/selectCourse?s=')[1].split('"')[0]
         data = {
             'deptIds': deptid,
             'sb': 0
@@ -179,14 +190,14 @@ class Cli(object):
         categoryUrl = Course.category + identity
         r = self.post(categoryUrl, data=data)
         codeRe = re.compile(r'<span id="courseCode_([A-F0-9]{16})">' + cid + '<\/span>')
-        code = codeRe.findall(r.content)[0]
+        code = codeRe.findall(r.text)[0]
         data = {
             'deptIds': deptid,
             'sids': code
         }
         courseSaveUrl = Course.save + identity
         r = self.post(courseSaveUrl, data=data)
-        if 'class="error"></label>' in r.content:
+        if 'class="error"></label>' in r.text:
             return True
         else:
             return False
@@ -205,7 +216,7 @@ def initLogger():
 
 def main():
     initLogger()
-    with open('auth', 'rb') as fh:
+    with open('auth', 'r', encoding='utf8') as fh:
         user = fh.readline().strip()
         password = fh.readline().strip()
     if '-c' in sys.argv or 'captcha' in sys.argv:
@@ -232,6 +243,10 @@ def main():
             requests.exceptions.ConnectTimeout
         ) as e:
             c.logger.debug('network error')
+        except AuthInvalid as e:
+            c.logger.error('wait for user operating')
+            time.sleep(Config.waitForUser)
+            c.auth()
         except Exception as e:
             c.logger.error(repr(e))
     if  ('-m' in sys.argv or 'mail' in sys.argv) and os.path.exists('mailconfig'):

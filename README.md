@@ -10,12 +10,12 @@ ucas 选课脚本，支持轮询选课，当有人退课时自动选课。
 
 ### 环境依赖
 
-Python 2.7.x
+Python 3.x
 
 ### Mac
 
 ```bash
-brew install python
+brew install python3
 sudo easy_install pip
 sudo pip install requests
 ```
@@ -23,7 +23,7 @@ sudo pip install requests
 ### Linux
 
 ```bash
-sudo apt install python-pip
+sudo apt install python3-pip
 sudo pip install requests
 ```
 
