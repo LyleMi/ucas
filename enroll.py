@@ -224,8 +224,13 @@ def main():
     else:
         captcha = False
     c = Cli(user, password, captcha)
+    reauth = False
     while True:
         try:
+            if reauth:
+                c.auth()
+                reauth = False
+
             courseid = c.enroll()
             if not courseid:
                 break
@@ -245,8 +250,9 @@ def main():
             c.logger.debug('network error')
         except AuthInvalid as e:
             c.logger.error('wait for user operating')
+            reauth = True
             time.sleep(Config.waitForUser)
-            c.auth()
+            # reauth next loop
         except Exception as e:
             c.logger.error(repr(e))
     if  ('-m' in sys.argv or 'mail' in sys.argv) and os.path.exists('mailconfig'):
