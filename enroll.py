@@ -158,7 +158,7 @@ class Cli(object):
             self.s.cookies = cookies
 
     def enroll(self):
-        r = self.get(Course.selected)
+        r = self.get(Course.selection)
         if 'class="error"></label>' not in r.text:
             raise AuthInvalid
         courseid = []
@@ -167,8 +167,9 @@ class Cli(object):
             if cid in r.text:
                 self.logger.info('course %s already selected' % cid)
                 continue
-            if not self.enrollCourse(cid):
-                self.logger.debug('try enroll course %s fail' % cid)
+            error = self.enrollCourse(cid)
+            if error:
+                self.logger.debug('try enroll course %s fail: %s' % (cid, error))
                 courseid.append(cid)
             else:
                 self.logger.debug("enroll course %s success" % cid)
@@ -190,17 +191,21 @@ class Cli(object):
         categoryUrl = Course.category + identity
         r = self.post(categoryUrl, data=data)
         codeRe = re.compile(r'<span id="courseCode_([A-F0-9]{16})">' + cid + '<\/span>')
-        code = codeRe.findall(r.text)[0]
-        data = {
-            'deptIds': deptid,
-            'sids': code
-        }
-        courseSaveUrl = Course.save + identity
-        r = self.post(courseSaveUrl, data=data)
-        if 'class="error"></label>' in r.text:
-            return True
+        temp = codeRe.findall(r.text)
+        if temp:
+            code = temp[0]
+            data = {
+                'deptIds': deptid,
+                'sids': code
+            }
+            courseSaveUrl = Course.save + identity
+            r = self.post(courseSaveUrl, data=data)
+            if 'class="error"></label>' in r.text:
+                return None
+            else:
+                return "full"
         else:
-            return False
+            return "not found"
 
 
 def initLogger():
