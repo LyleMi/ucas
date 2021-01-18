@@ -252,7 +252,7 @@ def main():
             c.logger.error('wait for user operating')
             reauth = True
             time.sleep(Config.waitForUser)
-            # reauto next loop
+            # reauth next loop
         except Exception as e:
             c.logger.error(repr(e))
     if  ('-m' in sys.argv or 'mail' in sys.argv) and os.path.exists('mailconfig'):
