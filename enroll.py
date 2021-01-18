@@ -69,6 +69,7 @@ class Course:
 class NetworkSucks(Exception):
     pass
 
+
 class AuthInvalid(Exception):
     pass
 
@@ -113,7 +114,7 @@ class Cli(object):
             for c in fh:
                 tmp = c.replace(' ', '').strip()
                 if len(tmp):
-                    self.courseid.append(tmp)
+                    self.courseid.append(tmp.split(','))
 
     def login(self, user, password, captcha):
         if os.path.exists('cookie.pkl'):
@@ -163,34 +164,40 @@ class Cli(object):
             raise AuthInvalid
         courseid = []
         self.logger.debug(self.courseid)
-        for cid in self.courseid:
+        for info in self.courseid:
+            cid = info[0]
+            college = info[1] if len(info) > 1 else None
             if cid in r.text:
                 self.logger.info('course %s already selected' % cid)
                 continue
-            error = self.enrollCourse(cid)
+            error = self.enrollCourse(cid, college)
             if error:
-                self.logger.debug('try enroll course %s fail: %s' % (cid, error))
-                courseid.append(cid)
+                self.logger.debug(
+                    'try enroll course %s fail: %s' % (cid, error))
+                courseid.append(info)
             else:
                 self.logger.debug("enroll course %s success" % cid)
         return courseid
 
-    def enrollCourse(self, cid):
+    def enrollCourse(self, cid, college):
         r = self.get(Course.selection)
         depRe = re.compile(r'<label for="id_([0-9]{3})">(.*)<\/label>')
         deptIds = depRe.findall(r.text)
+        collegeName = college if college else CollegeCode[cid[:4]]
         for dep in deptIds:
-            if CollegeCode[cid[:4]] in dep[1]:
+            if collegeName in dep[1]:
                 deptid = dep[0]
                 break
-        identity = r.text.split('action="/courseManage/selectCourse?s=')[1].split('"')[0]
+        identity = r.text.split(
+            'action="/courseManage/selectCourse?s=')[1].split('"')[0]
         data = {
             'deptIds': deptid,
             'sb': 0
         }
         categoryUrl = Course.category + identity
         r = self.post(categoryUrl, data=data)
-        codeRe = re.compile(r'<span id="courseCode_([A-F0-9]{16})">' + cid + '<\/span>')
+        codeRe = re.compile(
+            r'<span id="courseCode_([A-F0-9]{16})">' + cid + '<\/span>')
         temp = codeRe.findall(r.text)
         if temp:
             code = temp[0]
@@ -260,7 +267,7 @@ def main():
             # reauth next loop
         except Exception as e:
             c.logger.error(repr(e))
-    if  ('-m' in sys.argv or 'mail' in sys.argv) and os.path.exists('mailconfig'):
+    if ('-m' in sys.argv or 'mail' in sys.argv) and os.path.exists('mailconfig'):
         with open('mailconfig', 'rb') as fh:
             user = fh.readline().strip()
             pwd = fh.readline().strip()
