@@ -118,3 +118,11 @@ i@iie.ac.cn
 
 1. 网易系邮箱第三方不能使用密码登录，需单独设置授权码。
 2. 学校邮箱服务器为 `mail.cstnet.cn`
+
+## 更新概要
+
+- `2021-01-18` [Cirn09](https://github.com/LyleMi/ucas/pull/6) 增加了Python3支持，增加了自动重新登录等特性，添加了新的courseId格式
+
+- `2019-08-29` [pzhxbz](https://github.com/LyleMi/ucas/pull/3) 更新了CollegeCode
+
+- `2018-09-06` 参考前人的代码完成选课功能，增加重试等特性
