@@ -119,22 +119,26 @@ class Cli(object):
     def login(self, user, password, captcha):
         if os.path.exists('cookie.pkl'):
             self.load()
-        else:
-            self.get(Login.page)
-            data = {
-                'userName': user,
-                'pwd': password,
-                'sb': 'sb'
-            }
-            if captcha:
-                with open('captcha.jpg', 'wb') as fh:
-                    fh.write(self.get(Login.pic).content)
-                data['certCode'] = input('input captcha >>> ')
-            self.post(Login.url, data=data)
-            if 'sepuser' not in self.s.cookies.get_dict():
-                self.logger.error('login fail...')
-                sys.exit()
-            self.save()
+            if self.auth():
+                return
+            else:
+                self.logger.debug('cookie expired...')
+                os.unlink('cookie.pkl')
+        self.get(Login.page)
+        data = {
+            'userName': user,
+            'pwd': password,
+            'sb': 'sb'
+        }
+        if captcha:
+            with open('captcha.jpg', 'wb') as fh:
+                fh.write(self.get(Login.pic).content)
+            data['certCode'] = input('input captcha >>> ')
+        self.post(Login.url, data=data)
+        if 'sepuser' not in self.s.cookies.get_dict():
+            self.logger.error('login fail...')
+            sys.exit()
+        self.save()
         self.auth()
 
     def auth(self):
@@ -146,6 +150,7 @@ class Cli(object):
         identityUrl = identity[1].split('"')[0]
         self.identity = identityUrl.split('Identity=')[1].split('&')[0]
         self.get(identityUrl)
+        return True
 
     def save(self):
         self.logger.debug('save cookie...')
@@ -160,7 +165,8 @@ class Cli(object):
 
     def enroll(self):
         r = self.get(Course.selection)
-        if 'class="error"></label>' not in r.text:
+        if 'loginSuccess' not in r.text:
+            # <label id="loginSuccess" class="success"></label>
             raise AuthInvalid
         courseid = []
         self.logger.debug(self.courseid)
