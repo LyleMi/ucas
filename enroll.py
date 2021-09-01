@@ -54,7 +54,7 @@ class Login:
     page = 'http://sep.ucas.ac.cn'
     url = page + '/slogin'
     system = page + '/portal/site/226/821'
-    pic = page + '/changePic'
+    pic = page + '/randomcode.jpg'
 
 
 class Course:
