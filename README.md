@@ -2,9 +2,7 @@
 
 ucas 选课脚本，支持轮询选课，当有人退课时自动选课。
 
-> 注：每年网站代码可能会变动，因作者无选课权限，且SEP不提供预选测试，故脚本存在失效可能，请注意风险。
-
-> CollegeCode还未统计完全，并且判断前四位也无法准确判断对应学院，请根据需要进行更改
+> 注：每年网站代码可能会变动，因作者无选课权限，且SEP不提供预选测试，故脚本存在失效可能，请注意风险。推荐在选课前查看本仓库代码是否有更新，并通过登录等功能对代码进行测试。如果在选课过程中发现课程的CollegeCode或选课网站的API有更新，欢迎发起PR或issue，非常感谢。
 
 ## 安装
 
@@ -29,7 +27,7 @@ sudo pip install requests
 
 ### Windows
 
-官网中安装Python后安装requests
+[官网](https://www.python.org/downloads/)中安装Python后安装requests
 
 ```bash
 python -m pip install requests
@@ -120,6 +118,8 @@ i@iie.ac.cn
 2. 学校邮箱服务器为 `mail.cstnet.cn`
 
 ## 更新概要
+
+- `2021-09-01` [KLOSYX](https://github.com/KLOSYX) 发现SEP系统更新了验证码地址，提交[issue](https://github.com/LyleMi/ucas/pull/10)进行了维护
 
 - `2021-01-18` [Cirn09](https://github.com/LyleMi/ucas/pull/6) 增加了Python3支持，增加了自动重新登录等特性，添加了新的courseId格式
 
