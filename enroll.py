@@ -194,25 +194,32 @@ class Cli(object):
             if collegeName in dep[1]:
                 deptid = dep[0]
                 break
-        identity = r.text.split(
-            'action="/courseManage/selectCourse?s=')[1].split('"')[0]
+        identity = r.text.split('action="/courseManage/selectCourse?s=')[1].split('"')[0]
         data = {
-            'deptIds': deptid,
-            'sb': 0
+            "deptIds": deptid,
+            "sb": 0
         }
         categoryUrl = Course.category + identity
         r = self.post(categoryUrl, data=data)
-        codeRe = re.compile(
-            r'<span id="courseCode_([A-F0-9]{16})">' + cid + '<\/span>')
+
+        codeRe = re.compile(r'<span id="courseCode_([A-F0-9]{16})">' + cid + "<\/span>")
         temp = codeRe.findall(r.text)
         if temp:
             code = temp[0]
+
+            csrf_re = re.compile(r'name="_csrftoken" value="(.*)"')
+            csrf_token = csrf_re.findall(r.text)[0]
             data = {
-                'deptIds': deptid,
-                'sids': code
+                "_csrftoken": csrf_token,
+                "deptIds": deptid,
+                "sids": code,
             }
             courseSaveUrl = Course.save + identity
+
+            self.s.headers["Referer"] = categoryUrl
             r = self.post(courseSaveUrl, data=data)
+            del self.s.headers["Referer"]
+
             if 'class="error"></label>' in r.text:
                 return None
             else:

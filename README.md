@@ -119,6 +119,8 @@ i@iie.ac.cn
 
 ## 更新概要
 
+- `2021-09-03` 选课系统加入了CSRF Token与Referer验证，[Yangjiaxi](https://github.com/Yangjiaxi) 更新了对应的逻辑
+
 - `2021-09-01` [KLOSYX](https://github.com/KLOSYX) 发现SEP系统更新了验证码地址，提交[issue](https://github.com/LyleMi/ucas/pull/10)进行了维护
 
 - `2021-01-18` [Cirn09](https://github.com/LyleMi/ucas/pull/6) 增加了Python3支持，增加了自动重新登录等特性，添加了新的courseId格式
